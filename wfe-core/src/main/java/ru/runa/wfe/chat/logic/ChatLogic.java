@@ -29,13 +29,17 @@ import ru.runa.wfe.chat.mapper.MessageAddedBroadcastFileMapper;
 import ru.runa.wfe.chat.mapper.MessageAddedBroadcastMapper;
 import ru.runa.wfe.commons.ClassLoaderUtil;
 import ru.runa.wfe.commons.logic.WfCommonLogic;
+import ru.runa.wfe.presentation.BatchPresentation;
 import ru.runa.wfe.security.AuthorizationException;
+import ru.runa.wfe.security.Permission;
+import ru.runa.wfe.security.SecuredObjectType;
 import ru.runa.wfe.user.Actor;
 import ru.runa.wfe.user.Executor;
 import ru.runa.wfe.user.User;
 
 @MonitoredWithSpring
 public class ChatLogic extends WfCommonLogic {
+    private final SecuredObjectType[] CHAT_ROOM_CLASSES = { SecuredObjectType.CHAT_ROOMS };
     private final Properties properties = ClassLoaderUtil.getProperties("chat.email.properties", false);
     @Autowired
     private ChatMessageDao messageDao;
@@ -90,7 +94,8 @@ public class ChatLogic extends WfCommonLogic {
         return messageFileMapper.toDtos(messages);
     }
 
-    public List<WfChatRoom> getChatRooms(User user) {
+    public List<WfChatRoom> getChatRooms(User user, BatchPresentation  batchPresentation) {
+        getPersistentObjects(user, batchPresentation, Permission.READ, CHAT_ROOM_CLASSES, true);
         return messageDao.getChatRooms(user.getActor());
     }
 

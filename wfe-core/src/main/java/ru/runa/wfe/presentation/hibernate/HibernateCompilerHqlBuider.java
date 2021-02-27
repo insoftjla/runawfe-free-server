@@ -29,6 +29,7 @@ import ru.runa.wfe.commons.ApplicationContextFactory;
 import ru.runa.wfe.commons.querydsl.HibernateQueryFactory;
 import ru.runa.wfe.presentation.BatchPresentation;
 import ru.runa.wfe.presentation.ClassPresentation;
+import ru.runa.wfe.presentation.ClassPresentationType;
 import ru.runa.wfe.presentation.DbSource.AccessType;
 import ru.runa.wfe.presentation.FieldDescriptor;
 import ru.runa.wfe.presentation.FieldFilterMode;
@@ -147,6 +148,7 @@ public class HibernateCompilerHqlBuider {
     public void build() {
         buildSelectClause();
         buildFromClauseForAliases();
+        buildJoinClauseForAliases();
         buildWhereClause();
         buildOrderClause();
     }
@@ -156,12 +158,12 @@ public class HibernateCompilerHqlBuider {
      */
     private void buildSelectClause() {
         if (parameters.isCountQuery()) {
-            query.append("select count (").append(ClassPresentation.classNameSQL).append(")");
+            query.append("select count (");
+            buildSelectClauseWithJoin();
+            query.append(")");
         } else {
-            query.append("select ").append(ClassPresentation.classNameSQL);
-            if (parameters.isOnlyIdentityLoad()) {
-                query.append(".id");
-            }
+            query.append("select ");
+            buildSelectClauseWithJoin();
         }
         query.append(" from ");
         if (parameters.getQueriedClass() != null) {
@@ -186,6 +188,58 @@ public class HibernateCompilerHqlBuider {
                     continue;
                 }
                 query.append(", ").append(field.dbSources[0].getSourceObject().getName()).append(" as ").append(alias);
+                break;
+            }
+        }
+    }
+
+    private void buildSelectClauseWithJoin() {
+        query.append(ClassPresentation.classNameSQL);
+        if (parameters.isOnlyIdentityLoad()) {
+            query.append(".id");
+            return;
+        }
+        if (!batchPresentation.getType().equals(ClassPresentationType.CHAT_ROOM)) {
+            return;
+        }
+        for (String name : aliasMapping.getJoinedAliases()) {
+            if (name.equals(ClassPresentation.classNameSQL)) {
+                continue;
+            }
+            final List<FieldDescriptor> fields = aliasMapping.getFields(name);
+            boolean isFirst = true;
+            for (final FieldDescriptor field : fields) {
+//                if (!HibernateCompilerHelper.isFieldSQLAffects(field, batchPresentation)) {
+//                    continue;
+//                }
+                    query.append(", ").append(field.dbSources[0].getValueDBPath(null, name));
+                break;
+            }
+        }
+    }
+
+    private void buildJoinClauseForAliases() {
+        for (String join : aliasMapping.getJoinedAliases()) {
+            if (join.equals(ClassPresentation.classNameSQL)) {
+                continue;
+            }
+            final List<FieldDescriptor> fields = aliasMapping.getFields(join);
+            if (!fields.isEmpty()) {
+                query.append(" inner join ");
+            }
+            boolean isFirst = true;
+            for (final FieldDescriptor field : fields) {
+//                if (!HibernateCompilerHelper.isFieldSQLAffects(field, batchPresentation)) {
+//                    continue;
+//                }
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    query.append(", ");
+                }
+                query.append(field.dbSources[0].getValueDBPath(null, ClassPresentation.classNameSQL))
+                        .append(" on ").
+                        append(field.dbSources[0].getSourceObject().getName()).append(" as ").append(join);
                 break;
             }
         }

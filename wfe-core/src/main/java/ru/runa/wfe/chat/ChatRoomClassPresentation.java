@@ -1,5 +1,6 @@
 package ru.runa.wfe.chat;
 
+import ru.runa.wfe.definition.Deployment;
 import ru.runa.wfe.execution.Process;
 import ru.runa.wfe.presentation.ClassPresentation;
 import ru.runa.wfe.presentation.DefaultDbSource;
@@ -19,11 +20,28 @@ public class ChatRoomClassPresentation extends ClassPresentation {
 
     private static final ClassPresentation INSTANCE = new ChatRoomClassPresentation();
 
+    private static class ChildDbSource extends DefaultDbSource {
+
+        public ChildDbSource(Class<?> sourceObject, String valueDBPath) {
+            super(sourceObject, valueDBPath);
+        }
+
+        @Override
+        public String getValueDBPath(AccessType accessType, String alias) {
+            return alias + "." + valueDBPath;
+        }
+
+        @Override
+        public String getJoinExpression(String alias) {
+            return alias + ".message.id";
+        }
+    }
+
     private ChatRoomClassPresentation() {
-        super(Process.class, "", true, new FieldDescriptor[]{
-                new FieldDescriptor(PROCESS_ID, Long.class.getName(), new DefaultDbSource(Process.class, "id"), true, FieldFilterMode.DATABASE,
+        super(ChatMessageRecipient.class, "", true, new FieldDescriptor[]{
+                new FieldDescriptor(PROCESS_ID, Long.class.getName(), new ChildDbSource(Process.class, "id"), true, FieldFilterMode.DATABASE,
                         "ru.runa.common.web.html.PropertyTdBuilder", new Object[]{ Permission.READ, "id" }),
-                new FieldDescriptor(DEFINITION_NAME, String.class.getName(), new DefaultDbSource(Process.class, "deployment.name"), true,
+                new FieldDescriptor(DEFINITION_NAME, String.class.getName(), new DefaultDbSource(Deployment.class, "message.process.deployment.name"), true,
                         FieldFilterMode.DATABASE, "ru.runa.common.web.html.PropertyTdBuilder", new Object[]{ Permission.READ, "processName" }),
                 new FieldDescriptor(NEW_MESSAGES, Integer.class.getName(), new DefaultDbSource(ChatMessageRecipient.class, "readDate"), true,
                         FieldFilterMode.DATABASE, "ru.runa.wf.web.html.ChatNewMessagesCountTdBuilder", new Object[]{ Permission.READ, "processId" }) });

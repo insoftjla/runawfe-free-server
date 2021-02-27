@@ -22,6 +22,7 @@ package ru.runa.wfe.presentation;
  */
 public class ClassPresentation {
 
+    public static final String querySQL = "query";
     /**
      * At DB request HQL/SQL string requested (root persistent) class has this name.
      */
