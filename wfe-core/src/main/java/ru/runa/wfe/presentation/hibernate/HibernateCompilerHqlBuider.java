@@ -23,8 +23,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.hibernate.Hibernate;
 import org.springframework.util.Assert;
+import ru.runa.wfe.chat.dto.WfChatRoom;
 import ru.runa.wfe.commons.ApplicationContextFactory;
 import ru.runa.wfe.commons.querydsl.HibernateQueryFactory;
 import ru.runa.wfe.presentation.BatchPresentation;
@@ -194,28 +196,33 @@ public class HibernateCompilerHqlBuider {
     }
 
     private void buildSelectClauseWithJoin() {
-        query.append(ClassPresentation.classNameSQL);
-        if (parameters.isOnlyIdentityLoad()) {
-            query.append(".id");
-            return;
-        }
         if (!batchPresentation.getType().equals(ClassPresentationType.CHAT_ROOM)) {
+            query.append(ClassPresentation.classNameSQL);
+            if (parameters.isOnlyIdentityLoad()) {
+                query.append(".id");
+            }
             return;
         }
-        for (String name : aliasMapping.getJoinedAliases()) {
-            if (name.equals(ClassPresentation.classNameSQL)) {
-                continue;
-            }
+        boolean isFirst = true;
+        Set<String> aliases = aliasMapping.getAliases();
+        query.append("new ru.runa.wfe.chat.dto.WfChatRoom(");
+        for (String name : aliases) {
             final List<FieldDescriptor> fields = aliasMapping.getFields(name);
-            boolean isFirst = true;
             for (final FieldDescriptor field : fields) {
 //                if (!HibernateCompilerHelper.isFieldSQLAffects(field, batchPresentation)) {
 //                    continue;
 //                }
-                    query.append(", ").append(field.dbSources[0].getValueDBPath(null, name));
+                String expression = field.dbSources[0].getValueDBPath(null, name);
+                if (isFirst) {
+                    isFirst = false;
+                } else if (!expression.isEmpty()) {
+                    query.append(", ");
+                }
+                    query.append(expression);
                 break;
             }
         }
+        query.append(")");
     }
 
     private void buildJoinClauseForAliases() {
@@ -225,7 +232,7 @@ public class HibernateCompilerHqlBuider {
             }
             final List<FieldDescriptor> fields = aliasMapping.getFields(join);
             if (!fields.isEmpty()) {
-                query.append(" inner join ");
+                query.append(" join ");
             }
             boolean isFirst = true;
             for (final FieldDescriptor field : fields) {
@@ -237,9 +244,8 @@ public class HibernateCompilerHqlBuider {
                 } else {
                     query.append(", ");
                 }
-                query.append(field.dbSources[0].getValueDBPath(null, ClassPresentation.classNameSQL))
-                        .append(" on ").
-                        append(field.dbSources[0].getSourceObject().getName()).append(" as ").append(join);
+                query.append(field.dbSources[0].getJoinExpression(ClassPresentation.classNameSQL))
+                        .append(" as ").append(join);
                 break;
             }
         }
@@ -259,6 +265,27 @@ public class HibernateCompilerHqlBuider {
         query.append(" where (1=1)");
         for (String condition : conditions) {
             query.append(" and (").append(condition).append(")");
+        }
+        if (batchPresentation.getType().equals(ClassPresentationType.CHAT_ROOM)) {
+            query.append(" group by ");
+            boolean isFirst = true;
+            Set<String> aliases = aliasMapping.getAliases();
+            for (String name : aliases) {
+                final List<FieldDescriptor> fields = aliasMapping.getFields(name);
+                for (final FieldDescriptor field : fields) {
+//                if (!HibernateCompilerHelper.isFieldSQLAffects(field, batchPresentation)) {
+//                    continue;
+//                }
+                    String expression = field.dbSources[0].getGroupByExpression(name);
+                    if (isFirst) {
+                        isFirst = false;
+                    } else if (!expression.isEmpty()) {
+                        query.append(", ");
+                    }
+                    query.append(expression);
+                    break;
+                }
+            }
         }
     }
 

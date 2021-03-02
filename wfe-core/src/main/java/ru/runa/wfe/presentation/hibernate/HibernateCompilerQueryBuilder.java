@@ -100,7 +100,7 @@ public class HibernateCompilerQueryBuilder {
         List<String> phSeq = HibernateCompilerPlaceholdersHelper.getPlaceholdersFromHQL(hqlBuilder.getQuery(), hqlBuilder.getPlaceholders());
         StringBuilder sqlRequest = new StringBuilder(queryTranslator.translate());
         HibernateCompilerPlaceholdersHelper.restorePlaceholdersInSQL(sqlRequest, phSeq);
-        sqlRequest = tuneSelectClause(sqlRequest);
+//        sqlRequest = tuneSelectClause(sqlRequest);
         new HibernateCompilerInheritanceFiltersBuilder(batchPresentation, hqlBuilder, queryTranslator).injectFiltersStatements(sqlRequest);
         new HibernateCompilerInheritanceOrderBuilder(batchPresentation, hqlBuilder, queryTranslator).injectOrderStatements(sqlRequest);
         new HibernateCompilerLeftJoinBuilder(batchPresentation).injectLeftJoin(sqlRequest);

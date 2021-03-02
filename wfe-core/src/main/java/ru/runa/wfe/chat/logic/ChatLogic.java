@@ -95,7 +95,7 @@ public class ChatLogic extends WfCommonLogic {
     }
 
     public List<WfChatRoom> getChatRooms(User user, BatchPresentation  batchPresentation) {
-        getPersistentObjects(user, batchPresentation, Permission.READ, CHAT_ROOM_CLASSES, true);
+        List<Object> objects = getPersistentObjects(user, batchPresentation, Permission.READ, CHAT_ROOM_CLASSES, true);
         return messageDao.getChatRooms(user.getActor());
     }
 

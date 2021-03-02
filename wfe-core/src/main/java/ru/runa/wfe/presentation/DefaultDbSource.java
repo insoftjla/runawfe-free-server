@@ -61,4 +61,9 @@ public class DefaultDbSource implements DbSource {
     public String getJoinExpression(String alias) {
         return "";
     }
+
+    @Override
+    public String getGroupByExpression(String alias) {
+        return "";
+    }
 }

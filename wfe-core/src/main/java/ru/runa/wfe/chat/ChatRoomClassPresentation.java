@@ -20,9 +20,9 @@ public class ChatRoomClassPresentation extends ClassPresentation {
 
     private static final ClassPresentation INSTANCE = new ChatRoomClassPresentation();
 
-    private static class ChildDbSource extends DefaultDbSource {
+    private static class ProcessDbSource extends DefaultDbSource {
 
-        public ChildDbSource(Class<?> sourceObject, String valueDBPath) {
+        public ProcessDbSource(Class<?> sourceObject, String valueDBPath) {
             super(sourceObject, valueDBPath);
         }
 
@@ -33,17 +33,75 @@ public class ChatRoomClassPresentation extends ClassPresentation {
 
         @Override
         public String getJoinExpression(String alias) {
-            return alias + ".message.id";
+            return alias + ".message.process";
+        }
+
+        @Override
+        public String getGroupByExpression(String alias) {
+            return alias +  "." +valueDBPath;
+        }
+    }
+
+    private static class DeploymentDbSource extends DefaultDbSource {
+
+        public DeploymentDbSource(Class<?> sourceObject, String valueDBPath) {
+            super(sourceObject, valueDBPath);
+        }
+
+        @Override
+        public String getValueDBPath(AccessType accessType, String alias) {
+            return alias + "." + valueDBPath;
+        }
+
+        @Override
+        public String getJoinExpression(String alias) {
+            return alias + ".message.process.deployment";
+        }
+
+        @Override
+        public String getGroupByExpression(String alias) {
+            return alias + "." + valueDBPath;
+        }
+    }
+
+    private static class ChatMessageRecipientDbSource extends DefaultDbSource {
+
+        public ChatMessageRecipientDbSource(Class<?> sourceObject, String valueDBPath) {
+            super(sourceObject, valueDBPath);
+        }
+
+        @Override
+        public String getValueDBPath(AccessType accessType, String alias) {
+            return "count(" + alias + "." + valueDBPath + ")";
+        }
+    }
+
+    private static class ChatMessageDbSource extends DefaultDbSource {
+
+        public ChatMessageDbSource(Class<?> sourceObject, String valueDBPath) {
+            super(sourceObject, valueDBPath);
+        }
+
+        @Override
+        public String getValueDBPath(AccessType accessType, String alias) {
+            return "";
+        }
+
+        @Override
+        public String getJoinExpression(String alias) {
+            return alias + ".message";
         }
     }
 
     private ChatRoomClassPresentation() {
         super(ChatMessageRecipient.class, "", true, new FieldDescriptor[]{
-                new FieldDescriptor(PROCESS_ID, Long.class.getName(), new ChildDbSource(Process.class, "id"), true, FieldFilterMode.DATABASE,
+                new FieldDescriptor(PROCESS_ID, Long.class.getName(), new ChatMessageDbSource(ChatMessage.class, ""), true, FieldFilterMode.DATABASE,
                         "ru.runa.common.web.html.PropertyTdBuilder", new Object[]{ Permission.READ, "id" }),
-                new FieldDescriptor(DEFINITION_NAME, String.class.getName(), new DefaultDbSource(Deployment.class, "message.process.deployment.name"), true,
+                new FieldDescriptor(PROCESS_ID, Long.class.getName(), new ProcessDbSource(Process.class, "id"), true, FieldFilterMode.DATABASE,
+                        "ru.runa.common.web.html.PropertyTdBuilder", new Object[]{ Permission.READ, "id" }),
+                new FieldDescriptor(DEFINITION_NAME, String.class.getName(), new DeploymentDbSource(Deployment.class, "name"), true,
                         FieldFilterMode.DATABASE, "ru.runa.common.web.html.PropertyTdBuilder", new Object[]{ Permission.READ, "processName" }),
-                new FieldDescriptor(NEW_MESSAGES, Integer.class.getName(), new DefaultDbSource(ChatMessageRecipient.class, "readDate"), true,
+                new FieldDescriptor(NEW_MESSAGES, Integer.class.getName(), new ChatMessageRecipientDbSource(ChatMessageRecipient.class, "readDate"), true,
                         FieldFilterMode.DATABASE, "ru.runa.wf.web.html.ChatNewMessagesCountTdBuilder", new Object[]{ Permission.READ, "processId" }) });
     }
 

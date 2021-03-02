@@ -54,6 +54,8 @@ public interface DbSource {
      */
     public String getJoinExpression(String alias);
 
+    public String getGroupByExpression(String alias);
+
     public static enum AccessType {
         FILTER,
         ORDER
